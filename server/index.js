@@ -104,22 +104,38 @@ app.use((req, res) => res.status(404).json({ success: false, message: 'Route not
 // ════════════════════════════════════════════════════════════
 //  STEP 6 — START SERVER
 // ════════════════════════════════════════════════════════════
-const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`  🚀  Server running at: http://localhost:${PORT}`);
-  console.log(`  📊  Admin Panel:       http://localhost:${PORT}/admin`);
-  console.log(`  🎓  Student Portal:    http://localhost:${PORT}/student`);
-  console.log('');
-});
+const DEFAULT_PORT = 3000;
+const START_PORT = Number(process.env.PORT) || DEFAULT_PORT;
+const MAX_PORT_ATTEMPTS = process.env.NODE_ENV === 'production' ? 1 : 10;
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error('');
-    console.error(`  Port ${PORT} is already in use.`);
-    console.error('  Close the other terminal running this app, or change PORT in .env.');
-    console.error('');
-    process.exit(1);
-  }
+function startServer(port, attempt = 1) {
+  const server = app.listen(port, () => {
+    console.log(`  🚀  Server running at: http://localhost:${port}`);
+    console.log(`  📊  Admin Panel:       http://localhost:${port}/admin`);
+    console.log(`  🎓  Student Portal:    http://localhost:${port}/student`);
+    console.log('');
+  });
 
-  throw err;
-});
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
+      const nextPort = port + 1;
+      console.warn('');
+      console.warn(`  Port ${port} is already in use. Trying ${nextPort}...`);
+      console.warn('');
+      startServer(nextPort, attempt + 1);
+      return;
+    }
+
+    if (err.code === 'EADDRINUSE') {
+      console.error('');
+      console.error(`  Port ${port} is already in use.`);
+      console.error('  Close the other terminal running this app, or change PORT in .env.');
+      console.error('');
+      process.exit(1);
+    }
+
+    throw err;
+  });
+}
+
+startServer(START_PORT);
