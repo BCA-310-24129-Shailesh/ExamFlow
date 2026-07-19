@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExamFlow — Online Exam Management</title>
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <link rel="stylesheet" href="/css/validation.css">
+<style>
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { padding-right: 2.6rem !important; width: 100%; box-sizing: border-box; }
+.pw-eye {
+  position: absolute; right: .6rem; top: 46%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.01); border: 1px solid transparent; cursor: pointer;
+  padding: 0.35rem; display: inline-flex; justify-content: center; align-items: center;
+  border-radius: 8px; color: var(--muted, #888); transition: color .18s, background .15s, border-color .15s;
+  line-height: 0;
+}
+.pw-eye:hover { color: var(--accent, #7c6de8); }
+.pw-eye:focus { outline: none; box-shadow: 0 0 0 3px rgba(108,99,255,.08); }
+.pw-eye svg { width: 16px; height: 16px; display: block; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <nav class="navbar">
+    <a href="/" class="nav-logo"><span class="nav-logo-dot"></span>EXAMFLOW</a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+      <button class="btn btn-outline btn-sm" onclick="openAuthModal('login')">Sign In</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">Get Started</button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">The modern exam platform</div>
+    <h1 class="hero-title">Conduct Exams with<br><span>Confidence &amp; Clarity</span></h1>
+    <p class="hero-sub">A complete online exam management system for institutions. Create exams, manage students, and analyse results — all in one place.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary btn-lg" onclick="openAuthModal('register')">Register</button>
+      <button class="btn btn-outline btn-lg" onclick="openAuthModal('login')">Sign In</button>
+    </div>
+  </section>
+
+  <div class="stats-bar">
+    <div class="stats-bar-item"><div class="stats-bar-num">100%</div><div class="stats-bar-label">Secure &amp; Reliable</div></div>
+    <div class="stats-bar-item"><div class="stats-bar-num">∞</div><div class="stats-bar-label">Questions &amp; Exams</div></div>
+    <div class="stats-bar-item"><div class="stats-bar-num">Live</div><div class="stats-bar-label">Results &amp; Analytics</div></div>
+    <div class="stats-bar-item"><div class="stats-bar-num">Real-time</div><div class="stats-bar-label">Timer &amp; Monitoring</div></div>
+  </div>
+
+  <section class="features-section">
+    <h2 class="section-heading">Everything you need ✦</h2>
+    <div class="features-grid">
+      <div class="feature-card"><span class="feature-icon">🎯</span><h3>Smart Exams</h3><p>Timed MCQ exams with shuffle, question banks, difficulty levels, and per-question marks.</p></div>
+      <div class="feature-card"><span class="feature-icon">👥</span><h3>Student Management</h3><p>Register students, manage profiles, activate/deactivate accounts and view complete history.</p></div>
+      <div class="feature-card"><span class="feature-icon">📊</span><h3>Instant Results</h3><p>Auto-graded submissions with detailed breakdowns — correct, wrong, skipped per question.</p></div>
+      <div class="feature-card"><span class="feature-icon">⏱️</span><h3>Live Timer</h3><p>Real-time countdown with auto-submit when time expires. No missed deadlines.</p></div>
+      <div class="feature-card"><span class="feature-icon">📚</span><h3>Subject Bank</h3><p>Organise questions by subject and code. Reuse questions across multiple exams easily.</p></div>
+      <div class="feature-card"><span class="feature-icon">🏆</span><h3>Admin Dashboard</h3><p>Full analytics, recent activity, upcoming exams, and student performance at a glance.</p></div>
+    </div>
+  </section>
+
+  <footer class="landing-footer">© 2026 ExamFlow — Online Exam Management System</footer>
+</div>
+
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="authOverlay" onclick="onOverlayClick(event,'authOverlay')">
+  <div class="modal" style="max-width:460px">
+    <button class="modal-close" onclick="closeModal('authOverlay')">✕</button>
+    <h2 class="modal-title" id="authModalTitle">Welcome back</h2>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin"    onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab"        id="tabRegister" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <div id="authServerMsg"></div>
+
+    <!-- SIGN IN FORM -->
+    <div id="loginSection">
+      <div style="margin-bottom:1rem">
+        <label style="font-size:.82rem;color:var(--muted);font-weight:500;display:block;margin-bottom:.5rem">Sign in as</label>
+        <div class="role-select-row">
+          <button class="role-opt active" id="loginRoleStudent" onclick="setLoginRole('student')">
+            <span class="ro-icon">🎓</span><span class="ro-label">Student</span>
+            <span class="ro-desc">Take exams &amp; view results</span>
+          </button>
+          <button class="role-opt" id="loginRoleAdmin" onclick="setLoginRole('admin')">
+            <span class="ro-icon">🔑</span><span class="ro-label">Admin</span>
+            <span class="ro-desc">Manage exams &amp; students</span>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email <span class="required">*</span></label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Password <span class="required">*</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+          <button type="button" class="pw-eye" onclick="togglePw('loginPassword',this)" aria-label="Toggle password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:.5rem"
+        id="loginBtn" data-label="Sign In" onclick="handleLogin()">Sign In</button>
+      <p style="text-align:right;font-size:.82rem;color:var(--muted);margin-top:.75rem">
+        <button type="button" onclick="openResetModal()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:.82rem;font-family:var(--font-body)">Forgot password?</button>
+      </p>
+      <p style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:1rem">
+        Don't have an account?
+        <button onclick="switchAuthTab('register')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:.82rem;font-family:var(--font-body)">Register here</button>
+      </p>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerSection" style="display:none">
+      <div style="margin-bottom:1rem">
+        <label style="font-size:.82rem;color:var(--muted);font-weight:500;display:block;margin-bottom:.5rem">Register as</label>
+        <div class="role-select-row">
+          <button class="role-opt active" id="regRoleStudent" onclick="setRegRole('student')">
+            <span class="ro-icon">🎓</span><span class="ro-label">Student</span>
+            <span class="ro-desc">Take exams &amp; view results</span>
+          </button>
+          <button class="role-opt" id="regRoleAdmin" onclick="setRegRole('admin')">
+            <span class="ro-icon">🔑</span><span class="ro-label">Admin</span>
+            <span class="ro-desc">Manage exams &amp; students</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin key — only visible when Admin role selected -->
+      <div class="form-group" id="adminKeyGroup" style="display:none">
+        <label>Admin Secret Key <span class="required">*</span>
+          <span style="font-size:.72rem;color:var(--muted);font-weight:400"> — provided by system administrator</span>
+        </label>
+        <div class="pw-wrap">
+          <input type="password" id="regAdminKey" placeholder="Enter admin secret key">
+          <button type="button" class="pw-eye" onclick="togglePw('regAdminKey',this)" aria-label="Toggle key">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" id="regName" placeholder="Rahul Sharma" autocomplete="name">
+        </div>
+        <div class="form-group" id="rollGroup">
+          <label>Roll Number</label>
+          <input type="text" id="regRoll" placeholder="2021CS001">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Email <span class="required">*</span></label>
+        <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="text" id="regPhone" placeholder="10 digit phone number" inputmode="numeric" autocomplete="tel">
+      </div>
+
+      <div class="form-group" id="deptGroup">
+        <label>Department</label>
+        <select id="regDeptSelect" onchange="toggleDeptOther(this)">
+          <option value="">Select Department</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Information Technology">Information Technology</option>
+          <option value="Electronics & Communication">Electronics & Communication</option>
+          <option value="Electrical Engineering">Electrical Engineering</option>
+          <option value="Mechanical Engineering">Mechanical Engineering</option>
+          <option value="Civil Engineering">Civil Engineering</option>
+          <option value="Other">Other...</option>
+        </select>
+        <input type="text" id="regDept" placeholder="Please specify your department" style="display:none; margin-top:0.5rem">
+      </div>
+
+      <div class="form-group">
+        <label>Password <span class="required">*</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="regPassword" placeholder="Min. 6 characters" autocomplete="new-password">
+          <button type="button" class="pw-eye" onclick="togglePw('regPassword',this)" aria-label="Toggle password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <div id="strengthMeter"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm Password <span class="required">*</span></label>
+        <input type="password" id="regConfirmPassword" placeholder="Re-enter your password">
+      </div>
+
+      <button class="btn btn-primary btn-full" style="margin-top:.5rem"
+        id="registerBtn" data-label="Create Account" onclick="handleRegister()">Create Account</button>
+      <p style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:1rem">
+        Already have an account?
+        <button onclick="switchAuthTab('login')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:.82rem;font-family:var(--font-body)">Sign in here</button>
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="overlay" id="resetOverlay" onclick="onOverlayClick(event,'resetOverlay')">
+  <div class="modal" style="max-width:460px">
+    <button class="modal-close" onclick="closeModal('resetOverlay')">✕</button>
+    <h2 class="modal-title">Reset Password</h2>
+    <div id="resetServerMsg"></div>
+
+    <div class="form-group">
+      <label>Email <span class="required">*</span></label>
+      <input type="email" id="resetEmail" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>New Password <span class="required">*</span></label>
+      <div class="pw-wrap">
+        <input type="password" id="resetPassword" placeholder="New password" autocomplete="new-password">
+        <button type="button" class="pw-eye" onclick="togglePw('resetPassword',this)" aria-label="Toggle password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Confirm Password <span class="required">*</span></label>
+      <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" autocomplete="new-password">
+    </div>
+    <div id="resetStrengthMeter"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('resetOverlay')">Cancel</button>
+      <button class="btn btn-primary" id="resetPasswordBtn" onclick="handleResetPassword()">Reset Password</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/utils.js"></script>
+<script src="/js/validation.js"></script>
+<script src="/js/landing.js"></script>
+<script>
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? /* eye-off icon */
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>`
+    : /* eye icon */
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>`;
+}
+</script>
+</body>
+</html>

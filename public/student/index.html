@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student — EXAMFLOW</title>
+
+  <!--
+    FILE CONNECTIONS:
+    shared.css     → base layout, buttons, cards, modals, tables
+    student.css    → exam cards, timer, result cards, exam screen
+    utils.js       → API(), formatters, showAlert(), openModal()
+    student/app.js → all student portal logic
+  -->
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/student.css">
+  <link rel="stylesheet" href="/css/validation.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-dot"></span>EXAMFLOW
+    </div>
+
+    <div class="sidebar-section">Student Portal</div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+        <span class="nav-icon">🏠</span> Dashboard
+      </button>
+      <button class="nav-item" data-page="exams" onclick="showPage('exams')">
+        <span class="nav-icon">📝</span> My Exams
+      </button>
+      <button class="nav-item" data-page="results" onclick="showPage('results')">
+        <span class="nav-icon">🏆</span> My Results
+      </button>
+      <button class="nav-item" data-page="profile" onclick="showPage('profile')">
+        <span class="nav-icon">👤</span> Profile
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar" id="sidebarAvatar">S</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Student</div>
+          <div class="user-role" id="sidebarRoll">—</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">⟵ Sign out</button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════
+       MAIN CONTENT
+       ══════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ── PAGE: DASHBOARD ── -->
+      <div class="page-view active" id="page-dashboard">
+        <div class="stats-grid" id="dashStats">
+          <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- Live exams section (hidden if none) -->
+        <div id="dashLiveSection" style="display:none">
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:.9rem;color:var(--success)">
+            🔴 Exams Live Right Now
+          </div>
+          <div id="dashLiveExams"></div>
+        </div>
+
+        <div style="margin-top:1.5rem">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Recent Results</span></div>
+              <div class="card-body" id="dashRecentResults">
+                <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+              </div>
+            </div>
+            <div class="card" style="background:var(--card2)">
+              <div class="card-header"><span class="card-title">Quick Tips</span></div>
+              <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:.85rem">
+                  <div style="display:flex;gap:.75rem;align-items:flex-start">
+                    <span style="font-size:1.2rem">⏱</span>
+                    <div>
+                      <div style="font-weight:600;font-size:.88rem">Watch the timer</div>
+                      <div style="font-size:.8rem;color:var(--muted)">Exam auto-submits when time runs out.</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:.75rem;align-items:flex-start">
+                    <span style="font-size:1.2rem">📋</span>
+                    <div>
+                      <div style="font-weight:600;font-size:.88rem">Review before submitting</div>
+                      <div style="font-size:.8rem;color:var(--muted)">Use the navigator panel to jump between questions.</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:.75rem;align-items:flex-start">
+                    <span style="font-size:1.2rem">🚫</span>
+                    <div>
+                      <div style="font-weight:600;font-size:.88rem">One attempt only</div>
+                      <div style="font-size:.8rem;color:var(--muted)">Each exam can only be taken once per student.</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:.75rem;align-items:flex-start">
+                    <span style="font-size:1.2rem">✅</span>
+                    <div>
+                      <div style="font-weight:600;font-size:.88rem">Instant results</div>
+                      <div style="font-size:.8rem;color:var(--muted)">See your score and answer review right after submitting.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: EXAMS ── -->
+      <div class="page-view" id="page-exams">
+        <div id="examsContainer">
+          <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: RESULTS ── -->
+      <div class="page-view" id="page-results">
+        <div id="resultsContainer">
+          <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: PROFILE ── -->
+      <div class="page-view" id="page-profile">
+        <div class="card" style="max-width:580px">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+            <span class="card-title">My Profile</span>
+            <button class="btn btn-outline btn-sm" type="button" id="editProfileBtn" onclick="enableProfileEdit()">Edit</button>
+          </div>
+          <div class="card-body">
+            <div id="profileServerMsg"></div>
+            <div class="form-group">
+              <label>Full Name <span class="required">*</span></label>
+              <input type="text" id="profName" disabled>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email (cannot change)</label>
+                <input type="email" id="profEmail" disabled style="opacity:.5;cursor:not-allowed">
+              </div>
+              <div class="form-group">
+                <label>Roll Number</label>
+                <input type="text" id="profRoll" disabled placeholder="e.g. 2021CS001" style="opacity:.5;cursor:not-allowed">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Mobile Number</label>
+              <input type="tel" id="profPhone" disabled inputmode="numeric" autocomplete="tel" placeholder="10 digit phone number" style="opacity:.5;cursor:not-allowed">
+            </div>
+            <div class="form-group">
+              <label>Department</label>
+              <select id="profDept" disabled style="opacity:.5;cursor:not-allowed">
+                <option value="">Select Department</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Electronics & Communication">Electronics & Communication</option>
+                <option value="Electrical Engineering">Electrical Engineering</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="saveProfileBtn" data-label="Save Changes" onclick="saveProfile()">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </main><!-- /main-content -->
+</div><!-- /layout -->
+
+
+<!-- ══════════════════════════════════════
+     FULL-SCREEN EXAM TAKING SCREEN
+     (shown over everything when exam starts)
+     ══════════════════════════════════════ -->
+<div class="exam-screen" id="examScreen">
+
+  <!-- Left Sidebar -->
+  <aside class="exam-sidebar">
+    <div class="exam-sidebar-header">
+      <div class="sidebar-logo">
+        <span class="sidebar-logo-dot"></span>ExamFlow
+      </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="exam-sidebar-summary">
+      <div class="summary-box">
+        <div class="val" id="sumAnswered" style="color:var(--success)">0</div>
+        <div class="lbl">Answered</div>
+      </div>
+      <div class="summary-box">
+        <div class="val" id="sumMarked" style="color:var(--accent)">0</div>
+        <div class="lbl">Marked</div>
+      </div>
+      <div class="summary-box">
+        <div class="val" id="sumRemaining" style="color:var(--danger)">—</div>
+        <div class="lbl">Remaining</div>
+      </div>
+    </div>
+
+    <!-- Env Info -->
+    <div class="env-info">
+      <div class="env-row"><span class="env-icon">🔒</span> Strict mode ON</div>
+      <div class="env-row"><span class="env-icon">🗓️</span> <span id="envDateTime"></span></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="exam-legend">
+      <div class="legend-item"><div class="legend-dot answered"></div>Answered</div>
+      <div class="legend-item"><div class="legend-dot marked"></div>Marked</div>
+      <div class="legend-item"><div class="legend-dot current"></div>Current</div>
+      <div class="legend-item"><div class="legend-dot"></div>Not Visited</div>
+    </div>
+
+    <div class="q-nav-container">
+      <div class="side-panel-title">Question Navigator</div>
+      <div class="q-nav-grid" id="qNavGrid">
+        <!-- Buttons rendered by JS -->
+      </div>
+    </div>
+
+    <button class="btn btn-danger btn-full" style="margin-top:auto" onclick="confirmSubmit()">
+      🚀 Submit Exam
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="exam-main">
+    <header class="exam-header">
+      <div class="exam-section-title">ALL QUESTIONS</div>
+      <div class="exam-timer" id="timerChip">⏱ 00:00</div>
+      <div class="exam-header-actions">
+<button class="btn btn-outline btn-sm" onclick="showInstructions()">Instructions</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmSubmit()">Submit</button>
+      </div>
+    </header>
+
+    <div class="exam-qs-panel" id="examQsPanel">
+      <!-- Rendered by student/app.js (Single Question View) -->
+    </div>
+
+    <footer class="exam-action-bar">
+      <div class="action-left">
+        <button class="btn btn-outline" id="btnMarkReview" onclick="toggleMarkForReview()">Mark for review</button>
+        <button class="btn btn-outline" id="btnClearResponse" onclick="clearResponse()">Clear response</button>
+      </div>
+      <div class="action-right">
+        <button class="btn btn-outline" id="btnPrevQ" onclick="previousQuestion()">← Previous</button>
+        <button class="btn btn-primary" id="btnNextQ" onclick="nextQuestion()">Next →</button>
+      </div>
+    </footer>
+  </div>
+</div><!-- /examScreen -->
+
+
+<!-- ══════════════════════════════════════
+     RESULT DETAIL MODAL
+     ══════════════════════════════════════ -->
+<div class="overlay" id="resultDetailOverlay" onclick="onOverlayClick(event,'resultDetailOverlay')">
+  <div class="modal modal-lg">
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:.6rem;margin-bottom:.25rem">
+      <button class="btn btn-sm btn-outline" id="downloadPdfBtn" onclick="downloadResultPDF()" style="font-size:.8rem">⬇ Download PDF</button>
+      <button class="modal-close" onclick="closeModal('resultDetailOverlay')">✕</button>
+    </div>
+    <div id="resultDetailContent"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     EXAM INSTRUCTIONS MODAL
+     ══════════════════════════════════════ -->
+<div class="overlay" id="instructionOverlay" onclick="onOverlayClick(event,'instructionOverlay')">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('instructionOverlay')">✕</button>
+    <div class="modal-title">Exam Instructions</div>
+    <div id="instructionContent" style="white-space:pre-wrap; line-height:1.6; margin-top:1rem; color:var(--text);"></div>
+    <div class="modal-footer" id="instructionFooter">
+      <button class="btn btn-outline" onclick="closeModal('instructionOverlay')">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!--
+  SCRIPT LOADING ORDER:
+  1. utils.js        → shared helpers (must be FIRST)
+  2. student/app.js  → student portal logic (uses utils.js)
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/validation.js"></script>
+<script src="/js/student/app.js"></script>
+</body>
+</html>

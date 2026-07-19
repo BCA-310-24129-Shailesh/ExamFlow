@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — EXAMFLOW</title>
+
+  <!--
+    FILE CONNECTIONS:
+    shared.css  → base design tokens, layout, tables, buttons, modals
+    admin.css   → admin-specific component styles
+    utils.js    → API(), showAlert(), openModal(), formatters
+    admin/app.js → all admin panel logic
+  -->
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/validation.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+       ══════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-dot"></span>EXAMFLOW
+    </div>
+
+    <div class="sidebar-section">Admin Panel</div>
+
+    <nav class="sidebar-nav">
+      <button type="button" class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <button type="button" class="nav-item" data-page="students" onclick="showPage('students')">
+        <span class="nav-icon">👥</span> Students
+      </button>
+      <button type="button" class="nav-item" data-page="subjects" onclick="showPage('subjects')">
+        <span class="nav-icon">📚</span> Subjects
+      </button>
+      <button type="button" class="nav-item" data-page="exams" onclick="showPage('exams')">
+        <span class="nav-icon">📝</span> Exams
+      </button>
+      <button type="button" class="nav-item" data-page="questions" onclick="showPage('questions')">
+        <span class="nav-icon">❓</span> Questions
+      </button>
+      <button type="button" class="nav-item" data-page="results" onclick="showPage('results')">
+        <span class="nav-icon">🏆</span> Results
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar" id="sidebarAvatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">⟵ Sign out</button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════
+       MAIN CONTENT AREA
+       ══════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+        <!-- dynamic action buttons injected by JS -->
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ── PAGE: DASHBOARD ── -->
+      <div class="page-view active" id="page-dashboard">
+        <div class="stats-grid" id="dashStats">
+          <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📊 Exam Performance</span>
+            </div>
+            <div class="card-body" style="position:relative;height:250px;">
+              <canvas id="examPerformanceChart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📈 Student Score Distribution</span>
+            </div>
+            <div class="card-body" style="position:relative;height:250px;">
+              <canvas id="scoreDistributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Recent Submissions</span>
+            </div>
+            <div class="card-body" id="recentResultsList">
+              <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Upcoming Exams</span>
+            </div>
+            <div class="card-body" id="upcomingExamsList">
+              <div class="loading-center"><div class="spinner spinner-lg"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: STUDENTS ── -->
+      <div class="page-view" id="page-students">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">All Students</span>
+          </div>
+          <div class="table-search">
+            <input type="text" id="studentsSearch" placeholder="Search by name, roll no., or department..." onkeyup="filterTable('studentsBody', 'studentsSearch')">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Roll No.</th>
+                  <th>Department</th>
+                  <th>Registered</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentsBody">
+                <tr><td colspan="6" class="loading-center"><div class="spinner spinner-lg"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: SUBJECTS ── -->
+      <div class="page-view" id="page-subjects">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Subjects</span>
+            <button class="btn btn-primary btn-sm" onclick="openSubjectModal()">+ Add Subject</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Code</th>
+                  <th>Description</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="subjectsBody">
+                <tr><td colspan="5" class="loading-center"><div class="spinner spinner-lg"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: EXAMS ── -->
+      <div class="page-view" id="page-exams">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Exams</span>
+            <button class="btn btn-primary btn-sm" onclick="openExamModal()">+ Create Exam</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Subject</th>
+                  <th>Duration</th>
+                  <th>Marks</th>
+                  <th>Schedule</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="examsBody">
+                <tr><td colspan="7" class="loading-center"><div class="spinner spinner-lg"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: QUESTIONS ── -->
+      <div class="page-view" id="page-questions">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Question Bank</span>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+              <select id="qSubjectFilter" style="width:auto;padding:.4rem .75rem;font-size:.85rem" onchange="loadQuestions()">
+                <option value="">All Subjects</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="openAIGenerateModal()" style="border-color:var(--primary);color:var(--primary)">✨ Auto-Generate</button>
+              <button class="btn btn-primary btn-sm" onclick="openQuestionModal()">+ Add Question</button>
+            </div>
+          </div>
+          <div class="table-search">
+            <input type="text" id="questionsSearch" placeholder="Search questions..." onkeyup="filterTable('questionsBody', 'questionsSearch')">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Question</th>
+                  <th>Subject</th>
+                  <th>Options</th>
+                  <th>Correct Answer</th>
+                  <th>Marks</th>
+                  <th>Difficulty</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="questionsBody">
+                <tr><td colspan="7" class="loading-center"><div class="spinner spinner-lg"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PAGE: RESULTS ── -->
+      <div class="page-view" id="page-results">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">All Results</span>
+            <button class="btn btn-primary btn-sm" onclick="openCompareModal()">📊 Compare Results</button>
+          </div>
+          <div class="table-search">
+            <input type="text" id="resultsSearch" placeholder="Search by student or exam name..." onkeyup="filterTable('resultsBody', 'resultsSearch')">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Exam</th>
+                  <th>Subject</th>
+                  <th>Score</th>
+                  <th>Result</th>
+                  <th>Auto Submit</th>
+                  <th>Time Taken</th>
+                  <th>Date</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody">
+                <tr><td colspan="8" class="loading-center"><div class="spinner spinner-lg"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </main><!-- /main-content -->
+</div><!-- /layout -->
+
+
+<!-- ══════════════════════════════════════
+     MODALS
+     ══════════════════════════════════════ -->
+
+<!-- Subject Modal -->
+<div class="overlay" id="subjectOverlay" onclick="onOverlayClick(event,'subjectOverlay')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('subjectOverlay')">✕</button>
+    <div class="modal-title" id="subjectModalTitle">Add Subject</div>
+    <div id="subjectServerMsg"></div>
+    <input type="hidden" id="subjectIdField">
+    <div class="form-group">
+      <label>Subject Name <span class="required">*</span></label>
+      <input type="text" id="subjectNameField" placeholder="e.g. Data Structures">
+    </div>
+    <div class="form-group">
+      <label>Subject Code <span class="required">*</span></label>
+      <input type="text" id="subjectCodeField" placeholder="e.g. CS301">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="subjectDescField" placeholder="Brief description of the subject..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('subjectOverlay')">Cancel</button>
+      <button class="btn btn-primary" id="saveSubjectBtn" data-label="Save Subject" onclick="saveSubject()">Save Subject</button>
+    </div>
+  </div>
+</div>
+
+<!-- Exam Modal -->
+<div class="overlay" id="examOverlay" onclick="onOverlayClick(event,'examOverlay')">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('examOverlay')">✕</button>
+    <div class="modal-title" id="examModalTitle">Create Exam</div>
+    <div id="examServerMsg"></div>
+    <input type="hidden" id="examIdField">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Exam Title <span class="required">*</span></label>
+        <input type="text" id="examTitleField" placeholder="Midterm Examination">
+      </div>
+      <div class="form-group">
+        <label>Subject <span class="required">*</span></label>
+        <select id="examSubjectSel">
+          <option value="">Select Subject</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label>Duration (mins) <span class="required">*</span></label>
+        <input type="number" id="examDurationField" placeholder="60" min="1">
+      </div>
+      <div class="form-group">
+        <label>Total Marks</label>
+        <input type="number" id="examTotalField" placeholder="Auto-calculated" min="1">
+      </div>
+      <div class="form-group">
+        <label>Passing Marks <span class="required">*</span></label>
+        <input type="number" id="examPassingField" placeholder="35" min="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Time <span class="required">*</span></label>
+        <input type="datetime-local" id="examStartField">
+      </div>
+      <div class="form-group">
+        <label>End Time <span class="required">*</span></label>
+        <input type="datetime-local" id="examEndField">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Instructions for Students</label>
+      <textarea id="examInstrField" placeholder="Read all questions carefully. Each question has only one correct answer."></textarea>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:var(--text)">
+        <input type="checkbox" id="examShuffleField">
+        Shuffle questions for each student
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('examOverlay')">Cancel</button>
+      <button class="btn btn-primary" id="saveExamBtn" data-label="Save Exam" onclick="saveExam()">Save Exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- Question Modal (standalone) -->
+<div class="overlay" id="questionOverlay" onclick="onOverlayClick(event,'questionOverlay')">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('questionOverlay')">✕</button>
+    <div class="modal-title" id="questionModalTitle">Add Question</div>
+    <div id="questionServerMsg"></div>
+    <input type="hidden" id="qIdField">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Subject <span class="required">*</span></label>
+        <select id="qSubjectField">
+          <option value="">Select Subject</option>
+        </select>
+      </div>
+      <div class="form-row" style="gap:.75rem">
+        <div class="form-group">
+          <label>Marks</label>
+          <input type="number" id="qMarksField" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label>Difficulty</label>
+          <select id="qDiffField">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Question Text <span class="required">*</span></label>
+      <textarea id="qTextField" placeholder="Enter your question here..." style="min-height:80px"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label class="checkbox-inline">
+        <input type="checkbox" id="qAttachToExamChk"> Attach this question to all existing exams for this subject
+      </label>
+    </div>
+    <div class="form-group">
+      <label>Options &amp; Correct Answer <span class="required">*</span></label>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">
+        Fill in all 4 options, then select the radio button (●) next to the correct answer.
+      </p>
+      <div class="opt-row">
+        <span class="opt-label">A</span>
+        <input type="radio" name="qCorrect" value="0">
+        <input type="text" id="qOpt0" placeholder="Option A">
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">B</span>
+        <input type="radio" name="qCorrect" value="1">
+        <input type="text" id="qOpt1" placeholder="Option B">
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">C</span>
+        <input type="radio" name="qCorrect" value="2">
+        <input type="text" id="qOpt2" placeholder="Option C">
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">D</span>
+        <input type="radio" name="qCorrect" value="3">
+        <input type="text" id="qOpt3" placeholder="Option D">
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="closeModal('questionOverlay')">Cancel</button>
+      <button class="btn btn-secondary" id="saveAttachQuestionBtn" data-label="Save & Attach" onclick="saveQuestion(false, true)">Save & Attach</button>
+      <button class="btn btn-primary" id="saveQuestionBtn" data-label="Save Question" onclick="saveQuestion(false)">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Question to Exam Modal -->
+<div class="overlay" id="addQOverlay" onclick="onOverlayClick(event,'addQOverlay')">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('addQOverlay')">✕</button>
+    <div class="modal-title" id="addQExamTitle">Add Question to Exam</div>
+    <div id="addQServerMsg"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Subject <span class="required">*</span></label>
+        <select id="qSubjectSel">
+          <option value="">Select Subject</option>
+        </select>
+      </div>
+      <div class="form-row" style="gap:.75rem">
+        <div class="form-group">
+          <label>Marks</label>
+          <input type="number" id="addQMarksField" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label>Difficulty</label>
+          <select id="addQDifficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Question Text <span class="required">*</span></label>
+      <textarea id="addQTextField" placeholder="Enter your question..." style="min-height:80px"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Options &amp; Correct Answer <span class="required">*</span></label>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Select the radio (●) next to the correct answer.</p>
+      <div class="opt-row">
+        <span class="opt-label">A</span>
+        <input type="radio" name="addQCorrect" value="0">
+        <input type="text" id="addQOpt0" placeholder="Option A">
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">B</span>
+        <input type="radio" name="addQCorrect" value="1">
+        <input type="text" id="addQOpt1" placeholder="Option B">
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">C</span>
+        <input type="radio" name="addQCorrect" value="2">
+        <input type="text" id="addQOpt2" placeholder="Option C">
+      </div>
+      <div class="opt-row">
+        <span class="opt-label">D</span>
+        <input type="radio" name="addQCorrect" value="3">
+        <input type="text" id="addQOpt3" placeholder="Option D">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addQOverlay')">Cancel</button>
+      <button class="btn btn-primary" id="saveAddQBtn" data-label="Save Question" onclick="saveQuestion(true)">Save &amp; Add to Exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result Detail Modal -->
+<div class="overlay" id="resultDetailOverlay" onclick="onOverlayClick(event,'resultDetailOverlay')">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('resultDetailOverlay')">✕</button>
+    <div id="resultDetailContent"></div>
+  </div>
+</div>
+
+<!-- Compare Results Modal -->
+<div class="overlay" id="compareResultsOverlay" onclick="onOverlayClick(event,'compareResultsOverlay')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('compareResultsOverlay')">✕</button>
+    <div class="modal-title">📊 Compare Student Results</div>
+    <div id="compareServerMsg"></div>
+    <div class="form-group">
+      <label>Select First Result <span class="required">*</span></label>
+      <select id="compareResult1">
+        <option value="">Choose a result...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Select Second Result <span class="required">*</span></label>
+      <select id="compareResult2">
+        <option value="">Choose a result...</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="compareResults()">Compare</button>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison View Modal -->
+<div class="overlay" id="comparisonViewOverlay" onclick="onOverlayClick(event,'comparisonViewOverlay')">
+  <div class="modal modal-xl">
+    <button class="modal-close" onclick="closeModal('comparisonViewOverlay')">✕</button>
+    <div id="comparisonViewContent"></div>
+  </div>
+</div>
+
+
+<!--
+  SCRIPT LOADING ORDER:
+  1. utils.js     → shared helpers (must be first)
+  2. admin/app.js → admin panel logic (uses utils.js functions)
+-->
+<!-- AI Generate Modal -->
+<div class="overlay" id="aiGenerateOverlay" onclick="onOverlayClick(event,'aiGenerateOverlay')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('aiGenerateOverlay')">✕</button>
+    <div class="modal-title">✨ AI Question Generator</div>
+    <div id="aiServerMsg"></div>
+    <div class="form-group">
+      <label>Subject <span class="required">*</span></label>
+      <select id="aiSubjectSel">
+        <option value="">Select Subject</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Number of Questions (1-20) <span class="required">*</span></label>
+      <input type="number" id="aiCountField" value="5" min="1" max="20">
+    </div>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">
+      Note: This will use the Google Gemini API. Make sure your GEMINI_API_KEY is configured in the backend environment.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('aiGenerateOverlay')">Cancel</button>
+      <button class="btn btn-primary" id="aiGenerateBtn" data-label="Generate Questions" onclick="generateAIQuestions()">Generate Questions</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/utils.js"></script>
+<script src="/js/validation.js"></script>
+<script src="/js/admin/app.js"></script>
+</body>
+</html>
